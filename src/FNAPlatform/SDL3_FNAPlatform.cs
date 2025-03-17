@@ -1437,10 +1437,16 @@ namespace Microsoft.Xna.Framework
 			if (visible)
 			{
 				SDL.SDL_ShowCursor();
+
+				// Wine change!
+				System.Windows.Forms.Cursor.Show();
 			}
 			else
 			{
 				SDL.SDL_HideCursor();
+
+				// Wine change!
+				System.Windows.Forms.Cursor.Hide();
 			}
 		}
 
