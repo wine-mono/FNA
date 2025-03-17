@@ -12,6 +12,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using SDL3;
@@ -44,6 +45,65 @@ namespace Microsoft.Xna.Framework
 
 		/* This is needed for asynchronous window events */
 		private static List<Game> activeGames = new List<Game>();
+
+		// Wine change!
+		class HackForm : System.Windows.Forms.Form
+		{
+			public bool IsClosed;
+
+			private readonly IntPtr sdlHandle;
+
+			public HackForm(IntPtr window) : base()
+			{
+				IsClosed = false;
+				sdlHandle = window;
+				FormClosed += OnFormClosed;
+				CreateHandle();
+			}
+
+			private void OnFormClosed(object sender, EventArgs e)
+			{
+				IsClosed = true;
+			}
+
+			protected override void CreateHandle()
+			{
+				FieldInfo winField = typeof(System.Windows.Forms.Control).GetField(
+					"_window",
+					BindingFlags.Instance | BindingFlags.NonPublic
+				);
+				if (winField == null)
+				{
+					winField = typeof(System.Windows.Forms.Control).GetField(
+						"window",
+						BindingFlags.Instance | BindingFlags.NonPublic
+					);
+				}
+				System.Windows.Forms.NativeWindow internalWindow =
+					(System.Windows.Forms.NativeWindow) winField.GetValue(this);
+
+				internalWindow.AssignHandle(GetNativeWindow(sdlHandle));
+
+				// This throws an Exception internally and skips an UpdateReflectParent call!
+				try
+				{
+					base.CreateHandle();
+				}
+				catch(Exception e)
+				{
+					FNALoggerEXT.LogWarn(e.ToString());
+				}
+			}
+
+			protected override bool ProcessCmdKey (
+					ref System.Windows.Forms.Message msg, System.Windows.Forms.Keys keyData)
+			{
+				WndProc(ref msg);
+				return true;
+			}
+		}
+		private static Dictionary<IntPtr, HackForm> forms = new Dictionary<IntPtr, HackForm>();
+
 
 		#endregion
 
@@ -374,6 +434,11 @@ namespace Microsoft.Xna.Framework
 				GraphicsDeviceManager.DefaultBackBufferHeight,
 				initFlags
 			);
+
+			// Wine change!
+			HackForm form = new HackForm(window);
+			forms.Add(window, form);
+
 			if (window == IntPtr.Zero)
 			{
 				/* If this happens, the GL attributes were
@@ -439,6 +504,9 @@ namespace Microsoft.Xna.Framework
 			}
 
 			SDL.SDL_DestroyWindow(window.Handle);
+
+			// Wine change!
+			forms.Remove(window.Handle);
 		}
 
 		public static void ApplyWindowChanges(
@@ -1127,6 +1195,12 @@ namespace Microsoft.Xna.Framework
 					game.RunApplication = false;
 					break;
 				}
+			}
+
+			// Wine change!
+			if (forms[game.Window.Handle].IsClosed)
+			{
+				game.RunApplication = false;
 			}
 		}
 

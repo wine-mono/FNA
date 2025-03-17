@@ -82,9 +82,7 @@ namespace Microsoft.Xna.Framework
 				System.Windows.Forms.NativeWindow internalWindow =
 					(System.Windows.Forms.NativeWindow) winField.GetValue(this);
 
-				SDL.SDL_SysWMinfo info = new SDL.SDL_SysWMinfo();
-				SDL.SDL_GetWindowWMInfo(sdlHandle, ref info);
-				internalWindow.AssignHandle(info.info.win.window);
+				internalWindow.AssignHandle(GetNativeWindow(sdlHandle));
 
 				// This throws an Exception internally and skips an UpdateReflectParent call!
 				try
