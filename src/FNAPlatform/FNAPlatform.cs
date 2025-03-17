@@ -154,6 +154,8 @@ namespace Microsoft.Xna.Framework
 				SupportsOrientationChanges =	SDL3_FNAPlatform.SupportsOrientationChanges;
 				NeedsPlatformMainLoop = 	SDL3_FNAPlatform.NeedsPlatformMainLoop;
 				RunPlatformMainLoop =		SDL3_FNAPlatform.RunPlatformMainLoop;
+				GetWindowID = 			SDL3_FNAPlatform.GetWindowID;
+				GetNativeWindow = 		SDL3_FNAPlatform.GetNativeWindow;
 			}
 			else
 			{
@@ -209,10 +211,15 @@ namespace Microsoft.Xna.Framework
 				SupportsOrientationChanges =	SDL2_FNAPlatform.SupportsOrientationChanges;
 				NeedsPlatformMainLoop = 	SDL2_FNAPlatform.NeedsPlatformMainLoop;
 				RunPlatformMainLoop =		SDL2_FNAPlatform.RunPlatformMainLoop;
+				GetWindowID = 			SDL2_FNAPlatform.GetWindowID;
+				GetNativeWindow = 		SDL2_FNAPlatform.GetNativeWindow;
 			}
 
-			// wine-mono change: ensure SDL2 loads before FNA3D
-			SDL2.SDL.SDL_GetPlatform();
+			// wine-mono change: ensure SDL loads before FNA3D
+			if (useSDL3)
+				SDL3.SDL.SDL_GetPlatform();
+			else
+				SDL2.SDL.SDL_GetPlatform();
 
 			FNALoggerEXT.Initialize();
 
@@ -467,6 +474,12 @@ namespace Microsoft.Xna.Framework
 
 		public delegate void RunPlatformMainLoopFunc(Game game);
 		public static readonly RunPlatformMainLoopFunc RunPlatformMainLoop;
+
+		public delegate uint GetWindowIDFunc(IntPtr window);
+		public static readonly GetWindowIDFunc GetWindowID;
+
+		public delegate IntPtr GetNativeWindowFunc(IntPtr window);
+		public static readonly GetNativeWindowFunc GetNativeWindow;
 
 		#endregion
 	}

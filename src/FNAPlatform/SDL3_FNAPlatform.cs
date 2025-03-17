@@ -1163,6 +1163,21 @@ namespace Microsoft.Xna.Framework
 
 		#endregion
 
+		#region Wine-specific methods
+
+		public static uint GetWindowID(IntPtr window)
+		{
+			return SDL.SDL_GetWindowID(window);
+		}
+
+		public static IntPtr GetNativeWindow(IntPtr window)
+		{
+			return SDL.SDL_GetPointerProperty(
+				SDL.SDL_GetWindowProperties(window), SDL.SDL_PROP_WINDOW_WIN32_HWND_POINTER, IntPtr.Zero);
+		}
+
+		#endregion
+
 		#region Emscripten Main Loop
 
 		private static Game emscriptenGame;
