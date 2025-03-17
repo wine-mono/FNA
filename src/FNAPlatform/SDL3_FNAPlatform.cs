@@ -142,6 +142,15 @@ namespace Microsoft.Xna.Framework
 			 */
 			SDL.SDL_SetMainReady();
 
+			// Wine change!
+			if (OSVersion.Equals("Windows"))
+			{
+				SDL.SDL_SetHint(
+					SDL.SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP,
+					"0"
+				);
+			}
+
 			/* Mount TitleLocation.Path */
 			string titleLocation = GetBaseDirectory();
 
@@ -905,6 +914,7 @@ namespace Microsoft.Xna.Framework
 		) {
 			SDL.SDL_Event evt;
 			char* charsBuffer = stackalloc char[32]; // SDL_TEXTINPUTEVENT_TEXT_SIZE
+			System.Windows.Forms.Application.DoEvents();
 			while (SDL.SDL_PollEvent(out evt))
 			{
 				// Keyboard
