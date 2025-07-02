@@ -3,6 +3,7 @@
 
 ASSEMBLIES = \
 	Microsoft.Xna.Framework \
+	Microsoft.Xna.Framework.Avatar \
 	Microsoft.Xna.Framework.Game \
 	Microsoft.Xna.Framework.Graphics \
 	Microsoft.Xna.Framework.GamerServices \
