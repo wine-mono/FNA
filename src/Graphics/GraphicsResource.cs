@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Xml.Serialization;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -19,6 +20,7 @@ namespace Microsoft.Xna.Framework.Graphics
 	{
 		#region Public Properties
 
+		[XmlIgnore]
 		public GraphicsDevice GraphicsDevice
 		{
 			get
@@ -50,6 +52,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
+		[XmlIgnore]
 		public bool IsDisposed
 		{
 			get;

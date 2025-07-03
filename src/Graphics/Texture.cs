@@ -11,6 +11,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using System.Xml.Serialization;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -19,12 +20,14 @@ namespace Microsoft.Xna.Framework.Graphics
 	{
 		#region Public Properties
 
+		[XmlIgnore]
 		public SurfaceFormat Format
 		{
 			get;
 			protected set;
 		}
 
+		[XmlIgnore]
 		public int LevelCount
 		{
 			get;

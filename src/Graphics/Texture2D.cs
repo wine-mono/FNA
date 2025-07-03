@@ -11,6 +11,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Xml.Serialization;
 #endregion
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -19,12 +20,14 @@ namespace Microsoft.Xna.Framework.Graphics
 	{
 		#region Public Properties
 
+		[XmlIgnore]
 		public int Width
 		{
 			get;
 			private set;
 		}
 
+		[XmlIgnore]
 		public int Height
 		{
 			get;
@@ -42,6 +45,11 @@ namespace Microsoft.Xna.Framework.Graphics
 		#endregion
 
 		#region Public Constructors
+
+		internal Texture2D()
+		{
+			throw new NotSupportedException("XML serialization of Texture2D not supported");
+		}
 
 		public Texture2D(
 			GraphicsDevice graphicsDevice,
