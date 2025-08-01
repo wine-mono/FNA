@@ -252,7 +252,7 @@ namespace Microsoft.Xna.Framework
 			if (args.TryGetValue("audiodriver", out arg))
 			{
 				SDL.SDL_SetHintWithPriority(
-					"SDL_AUDIODRIVER",
+					"SDL_AUDIO_DRIVER",
 					arg,
 					SDL.SDL_HintPriority.SDL_HINT_OVERRIDE
 				);
