@@ -41,8 +41,10 @@ namespace Microsoft.Xna.Framework.Graphics
 				 */
 				if (graphicsDevice != null && selfReference.IsAllocated)
 				{
-					graphicsDevice.RemoveResourceReference(selfReference);
-					selfReference.Free();
+					if (graphicsDevice.RemoveResourceReference(selfReference))
+					{
+						selfReference.Free();
+					}
 				}
 
 				graphicsDevice = value;
@@ -194,8 +196,10 @@ namespace Microsoft.Xna.Framework.Graphics
 				// Remove from the list of graphics resources
 				if (graphicsDevice != null && selfReference.IsAllocated)
 				{
-					graphicsDevice.RemoveResourceReference(selfReference);
-					selfReference.Free();
+					if (graphicsDevice.RemoveResourceReference(selfReference))
+					{
+						selfReference.Free();
+					}
 				}
 
 				IsDisposed = true;
