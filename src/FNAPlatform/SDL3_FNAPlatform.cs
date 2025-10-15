@@ -99,6 +99,11 @@ namespace Microsoft.Xna.Framework
 					ref System.Windows.Forms.Message msg, System.Windows.Forms.Keys keyData)
 			{
 				WndProc(ref msg);
+				return base.ProcessCmdKey(ref msg, keyData);
+			}
+
+			protected override bool ProcessDialogKey(System.Windows.Forms.Keys keyData)
+			{
 				return true;
 			}
 		}
