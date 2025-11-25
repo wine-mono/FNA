@@ -277,6 +277,9 @@ namespace Microsoft.Xna.Framework.Content
 				throw new ObjectDisposedException("ContentManager");
 			}
 
+			// Wine Mono change: Normalize / to \
+			assetName = assetName.Replace("/", "\\");
+
 			object result = null;
 			Stream stream = null;
 			try
