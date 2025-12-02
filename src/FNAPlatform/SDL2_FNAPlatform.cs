@@ -1478,6 +1478,11 @@ namespace Microsoft.Xna.Framework
 			);
 		}
 
+		public static IntPtr GetMonitorHandle(int adapterIndex)
+		{
+			return new IntPtr(adapterIndex);
+		}
+
 		#endregion
 
 		#region Mouse Methods
