@@ -1432,9 +1432,37 @@ namespace Microsoft.Xna.Framework
 			);
 		}
 
+		[StructLayout(LayoutKind.Sequential)]
+		struct WIN32_RECT {
+			public int left;
+			public int top;
+			public int right;
+			public int bottom;
+		}
+
+		[DllImport("user32", CallingConvention=CallingConvention.StdCall)]
+		extern static IntPtr MonitorFromRect(ref WIN32_RECT lprc, int dwFlags);
+
+		const int MONITOR_DEFAULTTOPRIMARY = 2;
+
 		public static IntPtr GetMonitorHandle(int adapterIndex)
 		{
-			return new IntPtr(unchecked((int)displayIds[adapterIndex]));
+			// Wine Mono change: map SDL_DisplayID to HMONITOR
+			uint display_id = displayIds[adapterIndex];
+			SDL.SDL_Rect bounds;
+
+			if (SDL.SDL_GetDisplayBounds(display_id, out bounds))
+			{
+				WIN32_RECT rect = default(WIN32_RECT);
+				rect.left = bounds.x;
+				rect.top = bounds.y;
+				rect.right = bounds.x + bounds.w;
+				rect.bottom = bounds.y + bounds.h;
+
+				return MonitorFromRect(ref rect, MONITOR_DEFAULTTOPRIMARY);
+			}
+
+			return IntPtr.Zero;
 		}
 
 		#endregion
