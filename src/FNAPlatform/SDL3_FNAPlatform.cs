@@ -1432,19 +1432,6 @@ namespace Microsoft.Xna.Framework
 			);
 		}
 
-		[StructLayout(LayoutKind.Sequential)]
-		struct WIN32_RECT {
-			public int left;
-			public int top;
-			public int right;
-			public int bottom;
-		}
-
-		[DllImport("user32", CallingConvention=CallingConvention.StdCall)]
-		extern static IntPtr MonitorFromRect(ref WIN32_RECT lprc, int dwFlags);
-
-		const int MONITOR_DEFAULTTOPRIMARY = 2;
-
 		public static IntPtr GetMonitorHandle(int adapterIndex)
 		{
 			// Wine Mono change: map SDL_DisplayID to HMONITOR
