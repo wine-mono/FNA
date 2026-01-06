@@ -1449,20 +1449,8 @@ namespace Microsoft.Xna.Framework
 		{
 			// Wine Mono change: map SDL_DisplayID to HMONITOR
 			uint display_id = displayIds[adapterIndex];
-			SDL.SDL_Rect bounds;
-
-			if (SDL.SDL_GetDisplayBounds(display_id, out bounds))
-			{
-				WIN32_RECT rect = default(WIN32_RECT);
-				rect.left = bounds.x;
-				rect.top = bounds.y;
-				rect.right = bounds.x + bounds.w;
-				rect.bottom = bounds.y + bounds.h;
-
-				return MonitorFromRect(ref rect, MONITOR_DEFAULTTOPRIMARY);
-			}
-
-			return IntPtr.Zero;
+			uint props_id = SDL.SDL_GetDisplayProperties(display_id);
+			return SDL.SDL_GetPointerProperty(props_id, SDL.SDL_PROP_DISPLAY_WINDOWS_HMONITOR_POINTER, IntPtr.Zero);
 		}
 
 		#endregion
