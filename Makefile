@@ -311,8 +311,11 @@ SRC = \
 	src/Media/SongCollection.cs \
 	src/Media/VideoSoundtrackType.cs \
 	src/Media/VisualizationData.cs \
-	src/Media/Xiph/Video.cs \
-	src/Media/Xiph/VideoPlayer.cs \
+	src/Media/Video/IVideoPlayerCodec.cs \
+	src/Media/Video/BaseYUVPlayer.cs \
+	src/Media/Video/Video.cs \
+	src/Media/Video/VideoPlayer.cs \
+	src/Media/Video/VideoPlayerTheora.cs \
 	src/NamespaceDocs.cs \
 	src/Plane.cs \
 	src/PlaneIntersectionType.cs \
@@ -350,7 +353,8 @@ RES = \
 	-resource:$(RESDIR)/EnvironmentMapEffect.fxb,$(RESNAME).EnvironmentMapEffect.fxb \
 	-resource:$(RESDIR)/SkinnedEffect.fxb,$(RESNAME).SkinnedEffect.fxb \
 	-resource:$(RESDIR)/SpriteEffect.fxb,$(RESNAME).SpriteEffect.fxb \
-	-resource:src/Graphics/Effect/YUVToRGBA/YUVToRGBAEffect.fxb,$(RESNAME).YUVToRGBAEffect.fxb
+	-resource:src/Graphics/Effect/YUVToRGBA/YUVToRGBAEffect.fxb,$(RESNAME).YUVToRGBAEffect.fxb \
+	-resource:src/Graphics/Effect/YUVToRGBA/YUVToRGBAEffectR.fxb,$(RESNAME).YUVToRGBAEffectR.fxb
 
 CSFLAGS=-keyfile:mono.snk -r:System.Windows.Forms
 
