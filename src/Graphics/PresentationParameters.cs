@@ -66,11 +66,18 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 			get
 			{
+				// Wine change!
+				if (!System.Reflection.Assembly.GetCallingAssembly().GetName().Name.Equals("WineMono.FNA"))
+					return FNAPlatform.GetNativeWindow(parameters.deviceWindowHandle);
 				return parameters.deviceWindowHandle;
 			}
 			set
 			{
-				parameters.deviceWindowHandle = value;
+				// Wine change!
+				if (!System.Reflection.Assembly.GetCallingAssembly().GetName().Name.Equals("WineMono.FNA"))
+					parameters.deviceWindowHandle = FNAPlatform.GetSdlWindow(value);
+				else
+					parameters.deviceWindowHandle = value;
 			}
 		}
 

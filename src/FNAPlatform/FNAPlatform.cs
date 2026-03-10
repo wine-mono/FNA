@@ -170,6 +170,7 @@ namespace Microsoft.Xna.Framework
 				RunPlatformMainLoop =		SDL3_FNAPlatform.RunPlatformMainLoop;
 				GetWindowID = 			SDL3_FNAPlatform.GetWindowID;
 				GetNativeWindow = 		SDL3_FNAPlatform.GetNativeWindow;
+				GetSdlWindow = 		SDL3_FNAPlatform.GetSdlWindow;
 			}
 			else
 			{
@@ -228,6 +229,7 @@ namespace Microsoft.Xna.Framework
 				RunPlatformMainLoop =		SDL2_FNAPlatform.RunPlatformMainLoop;
 				GetWindowID = 			SDL2_FNAPlatform.GetWindowID;
 				GetNativeWindow = 		SDL2_FNAPlatform.GetNativeWindow;
+				GetSdlWindow = 		SDL2_FNAPlatform.GetSdlWindow;
 			}
 
 			// wine-mono change: ensure SDL loads before FNA3D
@@ -498,6 +500,9 @@ namespace Microsoft.Xna.Framework
 
 		public delegate IntPtr GetNativeWindowFunc(IntPtr window);
 		public static readonly GetNativeWindowFunc GetNativeWindow;
+
+		public delegate IntPtr GetSdlWindowFunc(IntPtr window);
+		public static readonly GetSdlWindowFunc GetSdlWindow;
 
 		#endregion
 	}

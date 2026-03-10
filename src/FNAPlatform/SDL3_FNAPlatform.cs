@@ -51,7 +51,7 @@ namespace Microsoft.Xna.Framework
 		{
 			public bool IsClosed;
 
-			private readonly IntPtr sdlHandle;
+			internal readonly IntPtr sdlHandle;
 
 			public HackForm(IntPtr window) : base()
 			{
@@ -1308,6 +1308,20 @@ namespace Microsoft.Xna.Framework
 		{
 			return SDL.SDL_GetPointerProperty(
 				SDL.SDL_GetWindowProperties(window), SDL.SDL_PROP_WINDOW_WIN32_HWND_POINTER, IntPtr.Zero);
+		}
+
+		public static IntPtr GetSdlWindow(IntPtr window)
+		{
+			if (forms.ContainsKey(window))
+				// Already an SDL window
+				return window;
+			var hackform = System.Windows.Forms.Control.FromHandle(window) as HackForm;
+			if (hackform != null)
+			{
+				return hackform.sdlHandle;
+			}
+			// Hopefully nobody does this
+			throw new NotSupportedException("Unknown window handle");
 		}
 
 		#endregion
