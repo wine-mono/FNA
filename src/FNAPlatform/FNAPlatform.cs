@@ -168,8 +168,8 @@ namespace Microsoft.Xna.Framework
 				SupportsOrientationChanges =	SDL3_FNAPlatform.SupportsOrientationChanges;
 				NeedsPlatformMainLoop = 	SDL3_FNAPlatform.NeedsPlatformMainLoop;
 				RunPlatformMainLoop =		SDL3_FNAPlatform.RunPlatformMainLoop;
-				GetWindowID = 			SDL3_FNAPlatform.GetWindowID;
-				GetNativeWindow = 		SDL3_FNAPlatform.GetNativeWindow;
+				WrapWindow =			SDL3_FNAPlatform.WrapWindow;
+				UnwrapWindow =			SDL3_FNAPlatform.UnwrapWindow;
 			}
 			else
 			{
@@ -226,8 +226,8 @@ namespace Microsoft.Xna.Framework
 				SupportsOrientationChanges =	SDL2_FNAPlatform.SupportsOrientationChanges;
 				NeedsPlatformMainLoop = 	SDL2_FNAPlatform.NeedsPlatformMainLoop;
 				RunPlatformMainLoop =		SDL2_FNAPlatform.RunPlatformMainLoop;
-				GetWindowID = 			SDL2_FNAPlatform.GetWindowID;
-				GetNativeWindow = 		SDL2_FNAPlatform.GetNativeWindow;
+				WrapWindow =			SDL2_FNAPlatform.WrapWindow;
+				UnwrapWindow =			SDL2_FNAPlatform.UnwrapWindow;
 			}
 
 			// wine-mono change: ensure SDL loads before FNA3D
@@ -493,11 +493,11 @@ namespace Microsoft.Xna.Framework
 		public delegate void RunPlatformMainLoopFunc(Game game);
 		public static readonly RunPlatformMainLoopFunc RunPlatformMainLoop;
 
-		public delegate uint GetWindowIDFunc(IntPtr window);
-		public static readonly GetWindowIDFunc GetWindowID;
+		public delegate IntPtr WrapWindowFunc(IntPtr handle);
+		public static readonly WrapWindowFunc WrapWindow;
 
-		public delegate IntPtr GetNativeWindowFunc(IntPtr window);
-		public static readonly GetNativeWindowFunc GetNativeWindow;
+		public delegate IntPtr UnwrapWindowFunc(IntPtr handle);
+		public static readonly UnwrapWindowFunc UnwrapWindow;
 
 		#endregion
 	}

@@ -62,11 +62,7 @@ namespace Microsoft.Xna.Framework
 			[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 			get
 			{
-				// Wine change!
-				if (!System.Reflection.Assembly.GetCallingAssembly().GetName().Name.Equals("WineMono.FNA"))
-				{
-					return FNAPlatform.GetNativeWindow(window);
-				}
+				// This does NOT use Wrap/Unwrap, that's done at construction
 				return window;
 			}
 		}

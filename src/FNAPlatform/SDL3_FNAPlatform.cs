@@ -51,7 +51,7 @@ namespace Microsoft.Xna.Framework
 		{
 			public bool IsClosed;
 
-			private readonly IntPtr sdlHandle;
+			internal readonly IntPtr sdlHandle;
 
 			public HackForm(IntPtr window) : base()
 			{
@@ -82,7 +82,7 @@ namespace Microsoft.Xna.Framework
 				System.Windows.Forms.NativeWindow internalWindow =
 					(System.Windows.Forms.NativeWindow) winField.GetValue(this);
 
-				internalWindow.AssignHandle(GetNativeWindow(sdlHandle));
+				internalWindow.AssignHandle(UnwrapWindow(sdlHandle));
 
 				// This throws an Exception internally and skips an UpdateReflectParent call!
 				try
@@ -107,7 +107,8 @@ namespace Microsoft.Xna.Framework
 				return true;
 			}
 		}
-		private static Dictionary<IntPtr, HackForm> forms = new Dictionary<IntPtr, HackForm>();
+		private static Dictionary<IntPtr, HackForm> hwndForms = new Dictionary<IntPtr, HackForm>();
+		private static Dictionary<IntPtr, HackForm> sdlWindowForms = new Dictionary<IntPtr, HackForm>();
 
 
 		#endregion
@@ -171,6 +172,10 @@ namespace Microsoft.Xna.Framework
 					mappingsDB
 				);
 			}
+
+#if DEBUG_WRAP_WINDOW
+			SDL.SDL_SetHint(SDL.SDL_HINT_INVALID_PARAM_CHECKS, "1");
+#endif
 
 			// Are you even surprised this is necessary?
 			if (Environment.GetEnvironmentVariable("FNA_NUKE_STEAM_INPUT") == "1")
@@ -465,18 +470,14 @@ namespace Microsoft.Xna.Framework
 			}
 
 			string title = MonoGame.Utilities.AssemblyHelper.GetDefaultWindowTitle();
-			IntPtr window = SDL.SDL_CreateWindow(
+			IntPtr sdlWindow = SDL.SDL_CreateWindow(
 				title,
 				GraphicsDeviceManager.DefaultBackBufferWidth,
 				GraphicsDeviceManager.DefaultBackBufferHeight,
 				initFlags
 			);
 
-			// Wine change!
-			HackForm form = new HackForm(window);
-			forms.Add(window, form);
-
-			if (window == IntPtr.Zero)
+			if (sdlWindow == IntPtr.Zero)
 			{
 				/* If this happens, the GL attributes were
 				 * rejected by the platform. This is EXTREMELY
@@ -486,7 +487,13 @@ namespace Microsoft.Xna.Framework
 					SDL.SDL_GetError()
 				);
 			}
-			INTERNAL_SetIcon(window, title);
+
+			// Wine change!
+			HackForm form = new HackForm(sdlWindow);
+			sdlWindowForms.Add(sdlWindow, form);
+			hwndForms.Add(UnwrapWindow(sdlWindow), form);
+
+			INTERNAL_SetIcon(sdlWindow, title);
 
 			// Disable the screensaver.
 			SDL.SDL_DisableScreenSaver();
@@ -498,16 +505,16 @@ namespace Microsoft.Xna.Framework
 			 * This is our way to communicate that it failed...
 			 * -flibit
 			 */
-			initFlags = (SDL.SDL_WindowFlags) SDL.SDL_GetWindowFlags(window);
+			initFlags = (SDL.SDL_WindowFlags) SDL.SDL_GetWindowFlags(sdlWindow);
 			if ((initFlags & SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY) == 0)
 			{
 				Environment.SetEnvironmentVariable("FNA_GRAPHICS_ENABLE_HIGHDPI", "0");
 			}
 
 			return new FNAWindow(
-				window,
+				UnwrapWindow(sdlWindow),
 				@"\\.\DISPLAY" + (
-					SDL.SDL_GetDisplayForWindow(window)
+					SDL.SDL_GetDisplayForWindow(sdlWindow)
 				).ToString()
 			);
 		}
@@ -540,10 +547,13 @@ namespace Microsoft.Xna.Framework
 				TextInputEXT.WindowHandle = IntPtr.Zero;
 			}
 
-			SDL.SDL_DestroyWindow(window.Handle);
+			IntPtr sdlWindow = WrapWindow(window.Handle);
+
+			SDL.SDL_DestroyWindow(sdlWindow);
 
 			// Wine change!
-			forms.Remove(window.Handle);
+			sdlWindowForms.Remove(sdlWindow);
+			hwndForms.Remove(window.Handle);
 		}
 
 		public static void ApplyWindowChanges(
@@ -562,20 +572,22 @@ namespace Microsoft.Xna.Framework
 			 */
 			ScaleForWindow(window, false, ref clientWidth, ref clientHeight);
 
+			IntPtr sdlWindow = WrapWindow(window);
+
 			// When windowed, set the size before moving
 			if (!wantsFullscreen)
 			{
 				bool resize = false;
-				if ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
+				if ((SDL.SDL_GetWindowFlags(sdlWindow) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
 				{
-					SDL.SDL_SetWindowFullscreen(window, false);
+					SDL.SDL_SetWindowFullscreen(sdlWindow, false);
 					resize = true;
 				}
 				else
 				{
 					int w, h;
 					SDL.SDL_GetWindowSize(
-						window,
+						sdlWindow,
 						out w,
 						out h
 					);
@@ -583,8 +595,8 @@ namespace Microsoft.Xna.Framework
 				}
 				if (resize)
 				{
-					SDL.SDL_RestoreWindow(window);
-					SDL.SDL_SetWindowSize(window, clientWidth, clientHeight);
+					SDL.SDL_RestoreWindow(sdlWindow);
+					SDL.SDL_SetWindowSize(sdlWindow, clientWidth, clientHeight);
 					center = true;
 				}
 			}
@@ -603,7 +615,7 @@ namespace Microsoft.Xna.Framework
 			// Just to be sure, become a window first before changing displays
 			if (resultDeviceName != screenDeviceName)
 			{
-				SDL.SDL_SetWindowFullscreen(window, false);
+				SDL.SDL_SetWindowFullscreen(sdlWindow, false);
 				resultDeviceName = screenDeviceName;
 				center = true;
 			}
@@ -614,7 +626,7 @@ namespace Microsoft.Xna.Framework
 				// FIXME CSHARP: SDL_WINDOWPOS_CENTERED_DISPLAY
 				int pos = (int) (0x2FFF0000 | displayIds[displayIndex]);
 				SDL.SDL_SetWindowPosition(
-					window,
+					sdlWindow,
 					pos,
 					pos
 				);
@@ -623,7 +635,7 @@ namespace Microsoft.Xna.Framework
 			// Set fullscreen after we've done all the ugly stuff.
 			if (wantsFullscreen)
 			{
-				if ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN) != 0)
+				if ((SDL.SDL_GetWindowFlags(sdlWindow) & SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN) != 0)
 				{
 					/* If we're still hidden, we can't actually go fullscreen yet.
 					 * But, we can at least set the hidden window size to match
@@ -631,12 +643,12 @@ namespace Microsoft.Xna.Framework
 					 * -flibit
 					 */
 					SDL.SDL_DisplayMode* mode = (SDL.SDL_DisplayMode*) SDL.SDL_GetCurrentDisplayMode(
-						SDL.SDL_GetDisplayForWindow(window)
+						SDL.SDL_GetDisplayForWindow(sdlWindow)
 					);
-					SDL.SDL_SetWindowSize(window, mode->w, mode->h);
+					SDL.SDL_SetWindowSize(sdlWindow, mode->w, mode->h);
 				}
 				SDL.SDL_SetWindowFullscreen(
-					window,
+					sdlWindow,
 					true
 				);
 			}
@@ -653,8 +665,9 @@ namespace Microsoft.Xna.Framework
 		public static void ScaleForWindow(IntPtr window, bool invert, ref int w, ref int h)
 		{
 			int ww, wh, dw, dh;
-			SDL.SDL_GetWindowSize(window, out ww, out wh);
-			FNA3D.FNA3D_GetDrawableSize(window, out dw, out dh);
+			IntPtr sdlWindow = WrapWindow(window);
+			SDL.SDL_GetWindowSize(sdlWindow, out ww, out wh);
+			FNA3D.FNA3D_GetDrawableSize(sdlWindow, out dw, out dh);
 			if (	ww != 0 &&
 				wh != 0 &&
 				dw != 0 &&
@@ -677,11 +690,12 @@ namespace Microsoft.Xna.Framework
 		public static Rectangle GetWindowBounds(IntPtr window)
 		{
 			Rectangle result;
-			if ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
+			IntPtr sdlWindow = WrapWindow(window);
+			if ((SDL.SDL_GetWindowFlags(sdlWindow) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0)
 			{
 				/* It's easier/safer to just use the display mode here */
 				SDL.SDL_DisplayMode* mode = (SDL.SDL_DisplayMode*) SDL.SDL_GetCurrentDisplayMode(
-					SDL.SDL_GetDisplayForWindow(window)
+					SDL.SDL_GetDisplayForWindow(sdlWindow)
 				);
 				result.X = 0;
 				result.Y = 0;
@@ -691,12 +705,12 @@ namespace Microsoft.Xna.Framework
 			else
 			{
 				SDL.SDL_GetWindowPosition(
-					window,
+					sdlWindow,
 					out result.X,
 					out result.Y
 				);
 				SDL.SDL_GetWindowSize(
-					window,
+					sdlWindow,
 					out result.Width,
 					out result.Height
 				);
@@ -706,26 +720,26 @@ namespace Microsoft.Xna.Framework
 
 		public static bool GetWindowResizable(IntPtr window)
 		{
-			return ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE) != 0);
+			return ((SDL.SDL_GetWindowFlags(WrapWindow(window)) & SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE) != 0);
 		}
 
 		public static void SetWindowResizable(IntPtr window, bool resizable)
 		{
 			SDL.SDL_SetWindowResizable(
-				window,
+				WrapWindow(window),
 				resizable
 			);
 		}
 
 		public static bool GetWindowBorderless(IntPtr window)
 		{
-			return ((SDL.SDL_GetWindowFlags(window) & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0);
+			return ((SDL.SDL_GetWindowFlags(WrapWindow(window)) & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0);
 		}
 
 		public static void SetWindowBorderless(IntPtr window, bool borderless)
 		{
 			SDL.SDL_SetWindowBordered(
-				window,
+				WrapWindow(window),
 				!borderless
 			);
 		}
@@ -733,14 +747,14 @@ namespace Microsoft.Xna.Framework
 		public static void SetWindowTitle(IntPtr window, string title)
 		{
 			SDL.SDL_SetWindowTitle(
-				window,
+				WrapWindow(window),
 				title
 			);
 		}
 
 		public static bool IsScreenKeyboardShown(IntPtr window)
 		{
-			return SDL.SDL_ScreenKeyboardShown(window);
+			return SDL.SDL_ScreenKeyboardShown(WrapWindow(window));
 		}
 
 		private static void INTERNAL_SetIcon(IntPtr window, string title)
@@ -850,7 +864,26 @@ namespace Microsoft.Xna.Framework
 			rect.w = rectangle.Width;
 			rect.h = rectangle.Height;
 			// FIXME SDL3: Do we need a cursor here?
-			SDL.SDL_SetTextInputArea(window, ref rect, 0);
+			SDL.SDL_SetTextInputArea(WrapWindow(window), ref rect, 0);
+		}
+
+		public static IntPtr WrapWindow(IntPtr handle)
+		{
+			if (handle == IntPtr.Zero)
+				return handle;
+			var form = hwndForms[handle];
+			return form.sdlHandle;
+		}
+
+		public static IntPtr UnwrapWindow(IntPtr handle)
+		{
+			if (handle == IntPtr.Zero)
+				return handle;
+			var result = SDL.SDL_GetPointerProperty(
+				SDL.SDL_GetWindowProperties(handle), SDL.SDL_PROP_WINDOW_WIN32_HWND_POINTER, IntPtr.Zero);
+			if (result == IntPtr.Zero)
+				throw new ArgumentException("unknown window handle");
+			return result;
 		}
 
 		#endregion
@@ -921,12 +954,13 @@ namespace Microsoft.Xna.Framework
 
 		public static GraphicsAdapter RegisterGame(Game game)
 		{
-			SDL.SDL_ShowWindow(game.Window.Handle);
+			IntPtr sdlWindow = WrapWindow(game.Window.Handle);
+			SDL.SDL_ShowWindow(sdlWindow);
 
 			// Store this for internal event filter work
 			activeGames.Add(game);
 
-			return FetchDisplayAdapter(game.Window.Handle);
+			return FetchDisplayAdapter(sdlWindow);
 		}
 
 		public static void UnregisterGame(Game game)
@@ -1061,7 +1095,7 @@ namespace Microsoft.Xna.Framework
 						{
 							// If we alt-tab away, we lose the 'fullscreen desktop' flag on some WMs
 							SDL.SDL_SetWindowFullscreen(
-								game.Window.Handle,
+								WrapWindow(game.Window.Handle),
 								game.GraphicsDevice.PresentationParameters.IsFullScreen
 							);
 						}
@@ -1075,7 +1109,7 @@ namespace Microsoft.Xna.Framework
 
 						if (SDL.SDL_GetCurrentVideoDriver() == "x11")
 						{
-							SDL.SDL_SetWindowFullscreen(game.Window.Handle, false);
+							SDL.SDL_SetWindowFullscreen(WrapWindow(game.Window.Handle), false);
 						}
 
 						// Give the screensaver back, we're not that important now.
@@ -1100,7 +1134,7 @@ namespace Microsoft.Xna.Framework
 						 * Also ignore any other "resizes" (alt-tab, fullscreen, etc.)
 						 * -flibit
 						 */
-						SDL.SDL_WindowFlags flags = SDL.SDL_GetWindowFlags(game.Window.Handle);
+						SDL.SDL_WindowFlags flags = SDL.SDL_GetWindowFlags(WrapWindow(game.Window.Handle));
 						if (	(flags & SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE) != 0 &&
 							(flags & (SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL.SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS)) != 0	)
 						{
@@ -1120,7 +1154,7 @@ namespace Microsoft.Xna.Framework
 						 * display, a GraphicsDevice Reset occurs.
 						 * -flibit
 						 */
-						GraphicsAdapter next = FetchDisplayAdapter(game.Window.Handle);
+						GraphicsAdapter next = FetchDisplayAdapter(WrapWindow(game.Window.Handle));
 
 						if (next != currentAdapter)
 						{
@@ -1166,7 +1200,7 @@ namespace Microsoft.Xna.Framework
 				{
 					GraphicsAdapter.AdaptersChanged();
 
-					currentAdapter = FetchDisplayAdapter(game.Window.Handle);
+					currentAdapter = FetchDisplayAdapter(WrapWindow(game.Window.Handle));
 
 					// Orientation Change
 					if (evt.type == (uint) SDL.SDL_EventType.SDL_EVENT_DISPLAY_ORIENTATION)
@@ -1258,7 +1292,8 @@ namespace Microsoft.Xna.Framework
 			}
 
 			// Wine change!
-			if (forms[game.Window.Handle].IsClosed)
+			var form = hwndForms[game.Window.Handle];
+			if (form.IsClosed)
 			{
 				game.RunApplication = false;
 			}
@@ -1293,21 +1328,6 @@ namespace Microsoft.Xna.Framework
 					"Cannot run the main loop of an unknown platform"
 				);
 			}
-		}
-
-		#endregion
-
-		#region Wine-specific methods
-
-		public static uint GetWindowID(IntPtr window)
-		{
-			return SDL.SDL_GetWindowID(window);
-		}
-
-		public static IntPtr GetNativeWindow(IntPtr window)
-		{
-			return SDL.SDL_GetPointerProperty(
-				SDL.SDL_GetWindowProperties(window), SDL.SDL_PROP_WINDOW_WIN32_HWND_POINTER, IntPtr.Zero);
 		}
 
 		#endregion
@@ -1464,7 +1484,7 @@ namespace Microsoft.Xna.Framework
 			{
 				flags = SDL.SDL_GetGlobalMouseState(out fx, out fy);
 				int wx = 0, wy = 0;
-				SDL.SDL_GetWindowPosition(window, out wx, out wy);
+				SDL.SDL_GetWindowPosition(WrapWindow(window), out wx, out wy);
 				fx -= wx;
 				fy -= wy;
 			}
@@ -1486,7 +1506,7 @@ namespace Microsoft.Xna.Framework
 		public static void WarpMouseInWindow(IntPtr window, int x, int y)
 		{
 			// Implicit conversion to float
-			SDL.SDL_WarpMouseInWindow(window, x, y);
+			SDL.SDL_WarpMouseInWindow(WrapWindow(window), x, y);
 		}
 
 		public static void OnIsMouseVisibleChanged(bool visible)
@@ -1509,12 +1529,12 @@ namespace Microsoft.Xna.Framework
 
 		public static bool GetRelativeMouseMode(IntPtr window)
 		{
-			return SDL.SDL_GetWindowRelativeMouseMode(window);
+			return SDL.SDL_GetWindowRelativeMouseMode(WrapWindow(window));
 		}
 
 		public static void SetRelativeMouseMode(IntPtr window, bool enable)
 		{
-			SDL.SDL_SetWindowRelativeMouseMode(window, enable);
+			SDL.SDL_SetWindowRelativeMouseMode(WrapWindow(window), enable);
 			if (enable)
 			{
 			    // Flush this value, it's going to be jittery
@@ -2409,17 +2429,17 @@ namespace Microsoft.Xna.Framework
 
 		public static bool IsTextInputActive(IntPtr window)
 		{
-			return SDL.SDL_TextInputActive(window);
+			return SDL.SDL_TextInputActive(WrapWindow(window));
 		}
 
 		public static void StartTextInput(IntPtr window)
 		{
-			SDL.SDL_StartTextInput(window);
+			SDL.SDL_StartTextInput(WrapWindow(window));
 		}
 
 		public static void StopTextInput(IntPtr window)
 		{
-			SDL.SDL_StopTextInput(window);
+			SDL.SDL_StopTextInput(WrapWindow(window));
 		}
 
 		#endregion

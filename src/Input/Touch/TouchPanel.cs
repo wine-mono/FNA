@@ -70,11 +70,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			}
 			set
 			{
-				// Wine change! Ignore handles that aren't SDL windows
-				if (FNAPlatform.GetWindowID(value) != 0)
-				{
-					INTERNAL_windowHandle = value;
-				}
+				INTERNAL_windowHandle = value;
 			}
 		}
 

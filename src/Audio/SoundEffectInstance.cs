@@ -110,12 +110,8 @@ namespace Microsoft.Xna.Framework.Audio
 					INTERNAL_state == SoundState.Playing	)
 				{
 					FAudio.FAudioVoiceState state;
-					FAudio.FAudioSourceVoice_GetState(
-						handle,
-						out state,
-						FAudio.FAUDIO_VOICE_NOSAMPLESPLAYED
-					);
-					if (state.BuffersQueued == 0)
+					FAudio.FAudioSourceVoice_GetState(handle, out state, 0);
+					if (state.BuffersQueued == 0 && state.SamplesPlayed == 0)
 					{
 						Stop(true);
 					}
@@ -328,7 +324,6 @@ namespace Microsoft.Xna.Framework.Audio
 			{
 				return; /* What */
 			}
-			FAudio.FAudio_AddRef(dev.Handle);
 
 			/* Apply current properties */
 			FAudio.FAudioVoice_SetVolume(handle, INTERNAL_volume, 0);
@@ -418,7 +413,6 @@ namespace Microsoft.Xna.Framework.Audio
 				FAudio.FAudioSourceVoice_Stop(handle, 0, 0);
 				FAudio.FAudioSourceVoice_FlushSourceBuffers(handle);
 				FAudio.FAudioVoice_DestroyVoice(handle);
-				FAudio.FAudio_Release(SoundEffect.Device().Handle);
 				handle = IntPtr.Zero;
 				usingReverb = false;
 				INTERNAL_state = SoundState.Stopped;
