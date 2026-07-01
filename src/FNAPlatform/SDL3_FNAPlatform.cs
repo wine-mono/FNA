@@ -595,7 +595,6 @@ namespace Microsoft.Xna.Framework
 				}
 				if (resize)
 				{
-					SDL.SDL_RestoreWindow(sdlWindow);
 					SDL.SDL_SetWindowSize(sdlWindow, clientWidth, clientHeight);
 					center = true;
 				}
@@ -983,16 +982,17 @@ namespace Microsoft.Xna.Framework
 				if (evt.type == (uint) SDL.SDL_EventType.SDL_EVENT_KEY_DOWN)
 				{
 					Keys key = ToXNAKey(ref evt.key.key, ref evt.key.scancode);
-					if (!Keyboard.keys.Contains(key))
+					if (Keyboard.keys.IsKeyUp(key))
 					{
-						Keyboard.keys.Add(key);
+						Keyboard.keys.AddPressedKey((int) key);
 						int textIndex;
 						if (FNAPlatform.TextInputBindings.TryGetValue(key, out textIndex))
 						{
 							textInputControlDown[textIndex] = true;
 							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[textIndex]);
 						}
-						else if ((Keyboard.keys.Contains(Keys.LeftControl) || Keyboard.keys.Contains(Keys.RightControl))
+						else if ((Keyboard.keys.IsKeyDown(Keys.LeftControl) || Keyboard.keys.IsKeyDown(Keys.RightControl))
+							&& Keyboard.keys.IsKeyUp(Keys.LeftAlt)
 							&& key == Keys.V)
 						{
 							textInputControlDown[6] = true;
@@ -1007,7 +1007,7 @@ namespace Microsoft.Xna.Framework
 						{
 							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[textIndex]);
 						}
-						else if ((Keyboard.keys.Contains(Keys.LeftControl) || Keyboard.keys.Contains(Keys.RightControl))
+						else if ((Keyboard.keys.IsKeyDown(Keys.LeftControl) || Keyboard.keys.IsKeyDown(Keys.RightControl))
 							&& key == Keys.V)
 						{
 							TextInputEXT.OnTextInput(FNAPlatform.TextInputCharacters[6]);
@@ -1017,14 +1017,15 @@ namespace Microsoft.Xna.Framework
 				else if (evt.type == (uint) SDL.SDL_EventType.SDL_EVENT_KEY_UP)
 				{
 					Keys key = ToXNAKey(ref evt.key.key, ref evt.key.scancode);
-					if (Keyboard.keys.Remove(key))
+					if (Keyboard.keys.IsKeyDown(key))
 					{
+						Keyboard.keys.RemovePressedKey((int) key);
 						int value;
 						if (FNAPlatform.TextInputBindings.TryGetValue(key, out value))
 						{
 							textInputControlDown[value] = false;
 						}
-						else if (((!Keyboard.keys.Contains(Keys.LeftControl) && !Keyboard.keys.Contains(Keys.RightControl)) && textInputControlDown[6])
+						else if (((Keyboard.keys.IsKeyUp(Keys.LeftControl) && Keyboard.keys.IsKeyUp(Keys.RightControl)) && textInputControlDown[6])
 							|| key == Keys.V)
 						{
 							textInputControlDown[6] = false;
@@ -1148,7 +1149,7 @@ namespace Microsoft.Xna.Framework
 					}
 
 					// Window Move
-					else if (evt.type == (uint) SDL.SDL_EventType.SDL_EVENT_WINDOW_MOVED)
+					else if (evt.type == (uint) SDL.SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED)
 					{
 						/* Apparently if you move the window to a new
 						 * display, a GraphicsDevice Reset occurs.

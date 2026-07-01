@@ -83,7 +83,7 @@ namespace Microsoft.Xna.Framework.Input
 		/// <returns>Current keyboard state.</returns>
 		public static KeyboardState GetState(PlayerIndex playerIndex)
 		{
-			return new KeyboardState(keys);
+			return keys;
 		}
 
 		#endregion
@@ -99,7 +99,7 @@ namespace Microsoft.Xna.Framework.Input
 
 		#region Internal Static Variables
 
-		internal static List<Keys> keys = new List<Keys>();
+		internal static KeyboardState keys = default(KeyboardState);
 
 		#endregion
 	}
